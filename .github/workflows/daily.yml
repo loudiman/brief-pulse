@@ -1,0 +1,29 @@
+name: daily-check
+
+on:
+  schedule:
+    - cron: "0 0 * * *" # 00:00 UTC = 08:00 Asia/Manila
+  workflow_dispatch: {}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e .
+      - run: briefpulse check
+        env:
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+      # Runners are ephemeral, so the SQLite file is uploaded per run for inspection.
+      # A production home for this job would be a small VPS with a persistent disk.
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: briefpulse-db-${{ github.run_id }}
+          path: briefpulse.db
+          if-no-files-found: ignore
