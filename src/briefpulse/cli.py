@@ -67,27 +67,30 @@ def run_check(
     flags: list[notify.Flag] = []
     failures: list[str] = []
 
-    for campaign in campaigns:
-        for creator in campaign.creators:
-            creator_count += 1
-            try:
-                videos = fetch(youtube_key, creator.handle, creator.name)
-                for video in videos:
-                    results = checks.run_hard_checks(video, campaign)
-                    results += judge_fn(video, campaign, gemini_key)
-                    db.write_results(conn, run_date, campaign.name, video, results)
-                    checked += 1
-                    flags.extend(
-                        notify.Flag(creator.name, video.title, video.video_id, r)
-                        for r in results
-                        if r.verdict != "pass"
-                    )
-                log.info("checked %s: %d videos", creator.handle, len(videos))
-            except Exception as exc:  # noqa: BLE001 — isolation boundary: any one creator's failure must reach the digest, not kill the run
-                log.warning("creator %s failed: %s", creator.handle, exc)
-                failures.append(f"{creator.handle}: {exc}")
+    try:
+        for campaign in campaigns:
+            for creator in campaign.creators:
+                creator_count += 1
+                try:
+                    videos = fetch(youtube_key, creator.handle, creator.name)
+                    for video in videos:
+                        results = checks.run_hard_checks(video, campaign)
+                        results += judge_fn(video, campaign, gemini_key)
+                        db.write_results(conn, run_date, campaign.name, video, results)
+                        checked += 1
+                        flags.extend(
+                            notify.Flag(creator.name, video.title, video.video_id, r)
+                            for r in results
+                            if r.verdict != "pass"
+                        )
+                    log.info("checked %s: %d videos", creator.handle, len(videos))
+                except Exception as exc:  # noqa: BLE001 — isolation boundary: any one creator's failure must reach the digest, not kill the run
+                    log.warning("creator %s failed: %s", creator.handle, exc)
+                    failures.append(f"{creator.handle}: {exc}")
 
-    db.write_run(conn, run_date, checked=checked, flags=len(flags), failures=len(failures))
+        db.write_run(conn, run_date, checked=checked, flags=len(flags), failures=len(failures))
+    finally:
+        conn.close()
     digest = notify.build_digest(run_date, checked, creator_count, flags, failures)
     if dry_run:
         print(digest)

@@ -14,22 +14,28 @@ def parse_uploads_playlist_id(raw: dict) -> str:
     items = raw.get("items") or []
     if not items:
         raise LookupError("channel not found for handle")
-    return items[0]["contentDetails"]["relatedPlaylists"]["uploads"]
+    try:
+        return items[0]["contentDetails"]["relatedPlaylists"]["uploads"]
+    except KeyError as exc:
+        raise LookupError(f"unexpected YouTube channels response: missing {exc}") from exc
 
 
 def parse_videos(raw: dict, creator_name: str) -> list[Video]:
     videos = []
-    for item in raw.get("items") or []:
-        snippet = item["snippet"]
-        videos.append(
-            Video(
-                video_id=snippet["resourceId"]["videoId"],
-                title=snippet["title"],
-                description=snippet["description"],
-                published_at=snippet["publishedAt"],
-                creator_name=creator_name,
+    try:
+        for item in raw.get("items") or []:
+            snippet = item["snippet"]
+            videos.append(
+                Video(
+                    video_id=snippet["resourceId"]["videoId"],
+                    title=snippet["title"],
+                    description=snippet["description"],
+                    published_at=snippet["publishedAt"],
+                    creator_name=creator_name,
+                )
             )
-        )
+    except KeyError as exc:
+        raise LookupError(f"unexpected YouTube playlistItems response: missing {exc}") from exc
     return videos
 
 

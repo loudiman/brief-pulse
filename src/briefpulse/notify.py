@@ -39,6 +39,9 @@ def build_digest(
 
 def post_digest(webhook_url: str, text: str) -> None:
     if len(text) > _DISCORD_LIMIT:
-        text = text[: _DISCORD_LIMIT - 20] + "\n…(truncated)"
+        cut = text.rfind("\n", 0, _DISCORD_LIMIT - 15)
+        if cut == -1:
+            cut = _DISCORD_LIMIT - 15
+        text = text[:cut] + "\n…(truncated)"
     response = requests.post(webhook_url, json={"content": text}, timeout=20)
     response.raise_for_status()
