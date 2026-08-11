@@ -33,7 +33,8 @@ def load_env(path: Path = Path(".env")) -> None:
         if not line or line.startswith("#") or "=" not in line:
             continue
         key, _, value = line.partition("=")
-        os.environ.setdefault(key.strip(), value.strip())
+        if value.strip():  # an empty `KEY=` line means "unset", not "set to empty string"
+            os.environ.setdefault(key.strip(), value.strip())
 
 
 def run_check(
@@ -86,7 +87,8 @@ def run_check(
                     log.info("checked %s: %d videos", creator.handle, len(videos))
                 except Exception as exc:  # noqa: BLE001 — isolation boundary: any one creator's failure must reach the digest, not kill the run
                     log.warning("creator %s failed: %s", creator.handle, exc)
-                    failures.append(f"{creator.handle}: {exc}")
+                    # digest gets a headline, not a stack of provider JSON; full detail is in the log
+                    failures.append(f"{creator.handle}: {str(exc).splitlines()[0][:200]}")
 
         db.write_run(conn, run_date, checked=checked, flags=len(flags), failures=len(failures))
     finally:
@@ -108,7 +110,7 @@ def main() -> int:
     check = sub.add_parser("check", help="run the daily compliance check")
     check.add_argument("--config", type=Path, default=DEFAULT_CONFIG_PATH)
     check.add_argument(
-        "--db", type=Path, default=Path(os.environ.get("BRIEFPULSE_DB", "briefpulse.db"))
+        "--db", type=Path, default=Path(os.environ.get("BRIEFPULSE_DB") or "briefpulse.db")
     )
     check.add_argument("--dry-run", action="store_true", help="print the digest instead of posting")
     args = parser.parse_args()

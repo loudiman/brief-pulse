@@ -65,7 +65,7 @@ def test_pipeline_stores_flags_and_isolates_failures(tmp_path: Path, monkeypatch
     assert count_results(connect(db_path)) == 5  # 3 hard + 2 llm rules for one video
     assert len(posted) == 1
     digest = posted[0]
-    assert "banned_claims: income promise" in digest
+    assert "banned_claims (income promise)" in digest
     assert "@broken: HTTP 403 from YouTube" in digest
 
 

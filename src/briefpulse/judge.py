@@ -7,6 +7,7 @@ JSON. parse_verdicts is deliberately defensive — anything malformed degrades t
 
 import json
 import os
+import time
 
 from .models import Campaign, RuleResult, Video
 
@@ -83,17 +84,37 @@ def parse_verdicts(raw: list[dict]) -> list[RuleResult]:
     return [seen[rule] for rule in LLM_RULES]
 
 
+# ponytail: fixed 12s pacing for the free tier's 5 requests/min; make configurable
+# (or drop entirely) on a paid tier
+_MIN_INTERVAL_SECONDS = 12.0
+_last_call = 0.0
+
+
 def judge_video(video: Video, campaign: Campaign, api_key: str) -> list[RuleResult]:
-    """Live Gemini call. Kept thin; parse_verdicts holds the logic."""
+    """Live Gemini call, paced for the free tier. parse_verdicts holds the logic."""
     from google import genai  # imported here so tests never need the package configured
 
+    global _last_call
     client = genai.Client(api_key=api_key)
-    response = client.models.generate_content(
-        model=os.environ.get("GEMINI_MODEL", DEFAULT_MODEL),
-        contents=build_prompt(video, campaign),
-        config={
-            "response_mime_type": "application/json",
-            "response_schema": _RESPONSE_SCHEMA,
-        },
-    )
+    for attempt in (1, 2):
+        wait = _MIN_INTERVAL_SECONDS - (time.monotonic() - _last_call)
+        if wait > 0:
+            time.sleep(wait)
+        _last_call = time.monotonic()
+        try:
+            response = client.models.generate_content(
+                model=os.environ.get("GEMINI_MODEL", DEFAULT_MODEL),
+                contents=build_prompt(video, campaign),
+                config={
+                    "response_mime_type": "application/json",
+                    "response_schema": _RESPONSE_SCHEMA,
+                },
+            )
+            break
+        except Exception as exc:
+            # 429 = free-tier quota window (resets per minute), 503 = temporary overload
+            if attempt == 1 and ("429" in str(exc) or "503" in str(exc)):
+                time.sleep(60)
+                continue
+            raise
     return parse_verdicts(json.loads(response.text or "[]"))

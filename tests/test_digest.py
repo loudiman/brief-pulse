@@ -21,7 +21,7 @@ def test_all_clear_digest_still_says_something() -> None:
     assert "Failures this run: none" in text
 
 
-def test_flags_are_listed_with_creator_title_and_reason() -> None:
+def test_flags_grouped_one_line_per_video() -> None:
     flags = [
         flag(
             "Pokimane",
@@ -30,15 +30,47 @@ def test_flags_are_listed_with_creator_title_and_reason() -> None:
             "fail",
             "missing #ad or #sponsored disclosure",
         ),
-        flag("xQc", "serum reaction", "talking_points", "unclear", "model returned no verdict"),
+        flag("Pokimane", "my morning routine", "hashtag", "fail", "missing campaign hashtag"),
+        Flag(
+            creator="Pokimane",
+            video_title="my morning routine",
+            video_id="vid1",
+            result=RuleResult(
+                rule="talking_points",
+                source="llm",
+                verdict="fail",
+                reason="guarantee not covered",
+                evidence="",
+            ),
+        ),
     ]
     text = build_digest("2026-08-12", checked=10, creators=2, flags=flags, failures=[])
-    assert "2 flags" in text
+    assert "1 flagged" in text
+    # one grouped line: hard rules by name, LLM rules with their reason
     assert (
-        "⚠️ Pokimane — “my morning routine” — disclosure: missing #ad or #sponsored disclosure"
+        "⚠️ Pokimane — “my morning routine” — disclosure, hashtag, talking_points (guarantee not covered)"
         in text
     )
-    assert "❔ xQc" in text  # unclear gets its own marker
+    assert text.count("my morning routine") == 1
+
+
+def test_video_with_only_unclear_rules_gets_question_marker() -> None:
+    flags = [
+        Flag(
+            creator="xQc",
+            video_title="serum reaction",
+            video_id="vid2",
+            result=RuleResult(
+                rule="banned_claims",
+                source="llm",
+                verdict="unclear",
+                reason="text too short",
+                evidence="",
+            ),
+        )
+    ]
+    text = build_digest("2026-08-12", checked=5, creators=1, flags=flags, failures=[])
+    assert "❔ xQc — “serum reaction” — banned_claims (text too short)" in text
 
 
 def test_failures_are_listed_by_creator() -> None:
