@@ -121,6 +121,9 @@ git-ignored — see `.env.example`):
   bot output in Discord.
 - **`unclear` beats wrong.** Any malformed/undecidable LLM verdict is surfaced for a
   human, never auto-passed.
+- **Free-tier LLM budget is the scaling ceiling.** One Gemini call per video: 2 creators ×
+  5 videos = 10 calls/day fits comfortably; ~10+ creators would need batch judging (one
+  call per creator) or a paid tier. Calls are paced (12s) with one retry on 429/503.
 - **GitHub Actions is the demo scheduler.** Runners are ephemeral, so the SQLite file is
   uploaded as a per-run artifact; a production home would be a small VPS with a
   persistent disk (the CreatorPulse setup).
