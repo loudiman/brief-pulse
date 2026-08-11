@@ -13,7 +13,7 @@ from .models import Campaign, RuleResult, Video
 
 LLM_RULES = ("talking_points", "banned_claims")
 
-DEFAULT_MODEL = "gemini-2.5-flash"
+DEFAULT_MODEL = "gemini-3.5-flash-lite"
 
 _RESPONSE_SCHEMA = {
     "type": "ARRAY",
