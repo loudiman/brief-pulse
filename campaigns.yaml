@@ -1,0 +1,20 @@
+# Campaign briefs. One entry per active campaign.
+# Non-technical teammates: edit this file to change what gets checked.
+# Every rule below is checked against each video's title + description.
+campaigns:
+  - name: GlowUp Serum Launch
+    brand: GlowUp
+    required_disclosure: true          # video must carry #ad or #sponsored
+    required_hashtag: "#glowuppartner" # campaign hashtag, case-insensitive
+    required_mention: "GlowUp"         # brand must be named
+    talking_points:                    # LLM checks these are actually covered
+      - 30-day money-back guarantee
+      - vitamin C formula
+    banned_claims:                     # LLM flags anything resembling these
+      - cures or treats any medical condition
+      - guaranteed income or earnings
+    creators:
+      - handle: "@pokimane"
+        name: Pokimane
+      - handle: "@xQcOW"
+        name: xQc

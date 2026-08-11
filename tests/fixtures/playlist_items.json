@@ -1,0 +1,23 @@
+{
+  "kind": "youtube#playlistItemListResponse",
+  "items": [
+    {
+      "kind": "youtube#playlistItem",
+      "snippet": {
+        "publishedAt": "2026-08-10T09:00:00Z",
+        "title": "my morning routine",
+        "description": "trying the GlowUp serum for 30 days #glowuppartner",
+        "resourceId": { "kind": "youtube#video", "videoId": "dQw4w9WgXcQ" }
+      }
+    },
+    {
+      "kind": "youtube#playlistItem",
+      "snippet": {
+        "publishedAt": "2026-08-08T15:30:00Z",
+        "title": "Q&A stream highlights",
+        "description": "answering your questions",
+        "resourceId": { "kind": "youtube#video", "videoId": "abc123def45" }
+      }
+    }
+  ]
+}
